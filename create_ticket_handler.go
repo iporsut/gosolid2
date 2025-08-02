@@ -28,59 +28,61 @@ type CreateTicketHandler struct {
 }
 
 func (h *CreateTicketHandler) Handler(c *gin.Context) {
-	eventID := c.Param("id")
-	if eventID == "" {
-		c.JSON(400, gin.H{"message": "event ID is required"})
-		return
-	}
-	var eventIDUint uint
-	if _, err := fmt.Sscanf(eventID, "%d", &eventIDUint); err != nil {
-		c.JSON(400, gin.H{"message": "invalid event ID format"})
-		return
-	}
+	h.db.Transaction(func(tx *gorm.DB) error {
+		eventID := c.Param("id")
+		if eventID == "" {
+			c.JSON(400, gin.H{"message": "event ID is required"})
+			return
+		}
+		var eventIDUint uint
+		if _, err := fmt.Sscanf(eventID, "%d", &eventIDUint); err != nil {
+			c.JSON(400, gin.H{"message": "invalid event ID format"})
+			return
+		}
 
-	var req CreateTicketRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{"message": "invalid request", "error": err.Error()})
-		return
-	}
+		var req CreateTicketRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(400, gin.H{"message": "invalid request", "error": err.Error()})
+			return
+		}
 
-	var event Event
-	if err := h.db.First(&event, eventID).Error; err != nil {
-		c.JSON(404, gin.H{"error": "Event not found"})
-		return
-	}
+		var event Event
+		if err := h.db.First(&event, eventID).Error; err != nil {
+			c.JSON(404, gin.H{"error": "Event not found"})
+			return
+		}
 
-	if req.Quantity > event.RemainingTickets {
-		c.JSON(400, gin.H{"error": "Not enough tickets available"})
-		return
-	}
+		if req.Quantity > event.RemainingTickets {
+			c.JSON(400, gin.H{"error": "Not enough tickets available"})
+			return
+		}
 
-	event.RemainingTickets -= req.Quantity
-	if err := h.db.Save(&event).Error; err != nil {
-		c.JSON(500, gin.H{"message": "Failed to update event tickets", "error": err.Error()})
-		return
-	}
+		event.RemainingTickets -= req.Quantity
+		if err := tx.Save(&event).Error; err != nil {
+			c.JSON(500, gin.H{"message": "Failed to update event tickets", "error": err.Error()})
+			return
+		}
 
-	ticket := Ticket{
-		EventID:      event.ID,
-		Quantity:     req.Quantity,
-		CustomerName: req.CustomerName,
-		BookedAt:     time.Now(),
-	}
+		ticket := Ticket{
+			EventID:      event.ID,
+			Quantity:     req.Quantity,
+			CustomerName: req.CustomerName,
+			BookedAt:     time.Now(),
+		}
 
-	if err := h.db.Create(&ticket).Error; err != nil {
-		c.JSON(500, gin.H{"message": "Failed to book tickets", "error": err.Error()})
-		return
-	}
+		if err := tx.Create(&ticket).Error; err != nil {
+			c.JSON(500, gin.H{"message": "Failed to book tickets", "error": err.Error()})
+			return
+		}
 
-	c.JSON(201, CreateTicketResponse{
-		ID:           ticket.ID,
-		EventID:      ticket.EventID,
-		Quantity:     ticket.Quantity,
-		BookedAt:     ticket.BookedAt,
-		CustomerName: ticket.CustomerName,
-		CreatedAt:    ticket.CreatedAt,
-		UpdatedAt:    ticket.UpdatedAt,
+		c.JSON(201, CreateTicketResponse{
+			ID:           ticket.ID,
+			EventID:      ticket.EventID,
+			Quantity:     ticket.Quantity,
+			BookedAt:     ticket.BookedAt,
+			CustomerName: ticket.CustomerName,
+			CreatedAt:    ticket.CreatedAt,
+			UpdatedAt:    ticket.UpdatedAt,
+		})
 	})
 }
