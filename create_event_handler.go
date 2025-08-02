@@ -47,10 +47,13 @@ func (h *CreateEventHandler) Handler(c *gin.Context) {
 		RemainingTickets: req.NumberOfTickets, // Initially all tickets are available
 	}
 
-	if err := h.db.Create(&event).Error; err != nil {
+	s := NewEventService(h.db)
+
+	if err := s.CreateEvent(&event); err != nil {
 		c.JSON(500, gin.H{"error": "Failed to create event"})
 		return
 	}
+	
 	c.JSON(201, CreateEventResponse{
 		ID:               event.ID,
 		Name:             event.Name,
