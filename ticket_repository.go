@@ -4,15 +4,15 @@ import (
 	"gorm.io/gorm"
 )
 
-type TicketRepository struct {
+type ticketRepository struct {
 	tx *gorm.DB
 }
 
-func NewTicketRepository(tx *gorm.DB) *TicketRepository {
-	return &TicketRepository{tx: tx}
+func NewTicketRepository(tx *gorm.DB) *ticketRepository {
+	return &ticketRepository{tx: tx}
 }
 
-func (r *TicketRepository) Create(ticket *Ticket) error {
+func (r *ticketRepository) Create(ticket *Ticket) error {
 	if err := r.tx.Create(ticket).Error; err != nil {
 		return err
 	}

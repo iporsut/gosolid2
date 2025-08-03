@@ -49,12 +49,33 @@ func main() {
 
 	// Create new event handler
 	e.POST("/events", authorizeMiddleware.Handler, func(c *gin.Context) {
-		h := CreateEventHandler{db: db}
+		h := CreateEventHandler{
+			db: db,
+			newEventService: func(tx *gorm.DB) EventService {
+				return NewEventService(tx,
+					func(tx *gorm.DB) EventRepository {
+						return NewEventRepository(tx)
+					},
+				)
+			},
+		}
 		h.Handler(c)
 	})
 
 	e.POST("/events/:id/tickets", authorizeMiddleware.Handler, func(c *gin.Context) {
-		h := CreateTicketHandler{db: db}
+		h := CreateTicketHandler{
+			db: db,
+			newTicketService: func(tx *gorm.DB) TicketService {
+				return NewTicketService(tx,
+					func(tx *gorm.DB) TicketRepository {
+						return NewTicketRepository(tx)
+					},
+					func(tx *gorm.DB) EventRepository {
+						return NewEventRepository(tx)
+					},
+				)
+			},
+		}
 		h.Handler(c)
 	})
 

@@ -24,8 +24,15 @@ type CreateTicketResponse struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
+type TicketService interface {
+	CreateTicket(eventID uint, req CreateTicketRequest) (*CreateTicketResponse, error)
+}
+
+type newTicketServiceFunc func(tx *gorm.DB) TicketService
+
 type CreateTicketHandler struct {
-	db *gorm.DB // Assuming you're using GORM for database operations
+	db               *gorm.DB
+	newTicketService newTicketServiceFunc
 }
 
 func (h *CreateTicketHandler) Handler(c *gin.Context) {
@@ -46,7 +53,7 @@ func (h *CreateTicketHandler) Handler(c *gin.Context) {
 	}
 
 	err := h.db.WithContext(c.Request.Context()).Transaction(func(tx *gorm.DB) error {
-		s := NewTicketService(tx)
+		s := h.newTicketService(tx)
 		response, err := s.CreateTicket(eventIDUint, req)
 		if err != nil {
 			return err

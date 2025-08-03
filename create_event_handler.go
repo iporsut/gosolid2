@@ -27,8 +27,15 @@ type CreateEventResponse struct {
 	UpdatedAt        time.Time `json:"updated_at"`
 }
 
+type newEventServiceFunc func(tx *gorm.DB) EventService
+
 type CreateEventHandler struct {
-	db *gorm.DB // Assuming you're using GORM for database operations
+	db              *gorm.DB
+	newEventService newEventServiceFunc
+}
+
+type EventService interface {
+	CreateEvent(event *Event) error
 }
 
 func (h *CreateEventHandler) Handler(c *gin.Context) {
@@ -47,13 +54,13 @@ func (h *CreateEventHandler) Handler(c *gin.Context) {
 		RemainingTickets: req.NumberOfTickets, // Initially all tickets are available
 	}
 
-	s := NewEventService(h.db)
+	s := h.newEventService(h.db)
 
 	if err := s.CreateEvent(&event); err != nil {
 		c.JSON(500, gin.H{"error": "Failed to create event"})
 		return
 	}
-	
+
 	c.JSON(201, CreateEventResponse{
 		ID:               event.ID,
 		Name:             event.Name,
