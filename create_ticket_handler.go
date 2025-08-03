@@ -24,10 +24,6 @@ type CreateTicketResponse struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
-type TicketService interface {
-	CreateTicket(eventID uint, req CreateTicketRequest) (*CreateTicketResponse, error)
-}
-
 type newTicketServiceFunc func(tx *gorm.DB) TicketService
 
 type CreateTicketHandler struct {

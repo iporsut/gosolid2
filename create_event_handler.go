@@ -34,10 +34,6 @@ type CreateEventHandler struct {
 	newEventService newEventServiceFunc
 }
 
-type EventService interface {
-	CreateEvent(event *Event) error
-}
-
 func (h *CreateEventHandler) Handler(c *gin.Context) {
 	var req CreateEventRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

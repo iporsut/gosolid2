@@ -50,3 +50,21 @@ type Ticket struct {
 	BookedAt     time.Time `gorm:"not null"` // Timestamp when the ticket was booked
 	CustomerName string    `gorm:"not null"` // Name of the customer who booked the ticket
 }
+
+type TicketRepository interface {
+	Create(ticket *Ticket) error
+}
+
+type EventRepository interface {
+	GeByID(id uint) (*Event, error)
+	Save(event *Event) error
+	Create(event *Event) error
+}
+
+type EventService interface {
+	CreateEvent(event *Event) error
+}
+
+type TicketService interface {
+	CreateTicket(eventID uint, req CreateTicketRequest) (*CreateTicketResponse, error)
+}

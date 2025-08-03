@@ -38,16 +38,6 @@ func (e *Error) Unwrap() error {
 	return e.Err
 }
 
-type TicketRepository interface {
-	Create(ticket *Ticket) error
-}
-
-type EventRepository interface {
-	GeByID(id uint) (*Event, error)
-	Save(event *Event) error
-	Create(event *Event) error
-}
-
 func (s *ticketService) CreateTicket(eventID uint, req CreateTicketRequest) (*CreateTicketResponse, error) {
 	eventRepo := s.newEventRepository(s.tx)
 
