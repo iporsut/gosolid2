@@ -1,23 +1,20 @@
 package main
 
 import (
+	"context"
 	"net/http"
-
-	"gorm.io/gorm"
 )
 
 type eventService struct {
-	tx                 *gorm.DB
-	newEventRepository newEventRepositoryFunc
+	eventRepository EventRepository
 }
 
-func NewEventService(tx *gorm.DB, newEventRepository newEventRepositoryFunc) *eventService {
-	return &eventService{tx: tx, newEventRepository: newEventRepository}
+func NewEventService(eventRepository EventRepository) *eventService {
+	return &eventService{eventRepository: eventRepository}
 }
 
-func (s *eventService) CreateEvent(event *Event) error {
-	eventRepo := s.newEventRepository(s.tx)
-	if err := eventRepo.Create(event); err != nil {
+func (s *eventService) CreateEvent(ctx context.Context, event *Event) error {
+	if err := s.eventRepository.Create(ctx, event); err != nil {
 		return &Error{Message: "failed to create event", StatusCode: http.StatusInternalServerError, Err: err}
 	}
 	return nil

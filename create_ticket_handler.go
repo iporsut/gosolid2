@@ -27,8 +27,8 @@ type CreateTicketResponse struct {
 type newTicketServiceFunc func(tx *gorm.DB) TicketService
 
 type CreateTicketHandler struct {
-	db               *gorm.DB
-	newTicketService newTicketServiceFunc
+	db            *gorm.DB
+	ticketService TicketService
 }
 
 func (h *CreateTicketHandler) Handler(c *gin.Context) {
@@ -48,9 +48,9 @@ func (h *CreateTicketHandler) Handler(c *gin.Context) {
 		return
 	}
 
-	err := h.db.WithContext(c.Request.Context()).Transaction(func(tx *gorm.DB) error {
-		s := h.newTicketService(tx)
-		response, err := s.CreateTicket(eventIDUint, req)
+	err := h.db.Transaction(func(tx *gorm.DB) error {
+		ctx := WithTx(c.Request.Context(), tx)
+		response, err := h.ticketService.CreateTicket(ctx, eventIDUint, req)
 		if err != nil {
 			return err
 		}

@@ -1,34 +1,49 @@
 package main
 
 import (
-	"gorm.io/gorm"
+	"context"
+	"errors"
 )
 
 type eventRepository struct {
-	tx *gorm.DB
 }
 
-func NewEventRepository(tx *gorm.DB) *eventRepository {
-	return &eventRepository{tx: tx}
+func NewEventRepository() *eventRepository {
+	return &eventRepository{}
 }
 
-func (r *eventRepository) GeByID(id uint) (*Event, error) {
+func (r *eventRepository) GeByID(ctx context.Context, id uint) (*Event, error) {
+	tx := TxFromContext(ctx)
+	if tx == nil {
+		return nil, errors.New("transaction not found in context")
+	}
+
 	var event Event
-	if err := r.tx.First(&event, id).Error; err != nil {
+	if err := tx.WithContext(ctx).First(&event, id).Error; err != nil {
 		return nil, err
 	}
 	return &event, nil
 }
 
-func (r *eventRepository) Save(event *Event) error {
-	if err := r.tx.Save(event).Error; err != nil {
+func (r *eventRepository) Save(ctx context.Context, event *Event) error {
+	tx := TxFromContext(ctx)
+	if tx == nil {
+		return errors.New("transaction not found in context")
+	}
+
+	if err := tx.WithContext(ctx).Save(event).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *eventRepository) Create(event *Event) error {
-	if err := r.tx.Create(event).Error; err != nil {
+func (r *eventRepository) Create(ctx context.Context, event *Event) error {
+	tx := TxFromContext(ctx)
+	if tx == nil {
+		return errors.New("transaction not found in context")
+	}
+
+	if err := tx.WithContext(ctx).Create(event).Error; err != nil {
 		return err
 	}
 	return nil

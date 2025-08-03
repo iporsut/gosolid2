@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -52,19 +53,19 @@ type Ticket struct {
 }
 
 type TicketRepository interface {
-	Create(ticket *Ticket) error
+	Create(ctx context.Context, ticket *Ticket) error
 }
 
 type EventRepository interface {
-	GeByID(id uint) (*Event, error)
-	Save(event *Event) error
-	Create(event *Event) error
+	GeByID(ctx context.Context, id uint) (*Event, error)
+	Save(ctx context.Context, event *Event) error
+	Create(ctx context.Context, event *Event) error
 }
 
 type EventService interface {
-	CreateEvent(event *Event) error
+	CreateEvent(ctx context.Context, event *Event) error
 }
 
 type TicketService interface {
-	CreateTicket(eventID uint, req CreateTicketRequest) (*CreateTicketResponse, error)
+	CreateTicket(ctx context.Context, eventID uint, req CreateTicketRequest) (*CreateTicketResponse, error)
 }

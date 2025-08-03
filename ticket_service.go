@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -11,16 +12,14 @@ type newTicketRepositoryFunc func(tx *gorm.DB) TicketRepository
 type newEventRepositoryFunc func(tx *gorm.DB) EventRepository
 
 type ticketService struct {
-	tx                  *gorm.DB
-	newTicketRepository newTicketRepositoryFunc
-	newEventRepository  newEventRepositoryFunc
+	ticketRepository TicketRepository
+	eventRepository  EventRepository
 }
 
-func NewTicketService(tx *gorm.DB, newTicketRepository newTicketRepositoryFunc, newEventRepository newEventRepositoryFunc) *ticketService {
+func NewTicketService(ticketRepository TicketRepository, eventRepository EventRepository) *ticketService {
 	return &ticketService{
-		tx:                  tx,
-		newTicketRepository: newTicketRepository,
-		newEventRepository:  newEventRepository,
+		ticketRepository: ticketRepository,
+		eventRepository:  eventRepository,
 	}
 }
 
@@ -38,10 +37,8 @@ func (e *Error) Unwrap() error {
 	return e.Err
 }
 
-func (s *ticketService) CreateTicket(eventID uint, req CreateTicketRequest) (*CreateTicketResponse, error) {
-	eventRepo := s.newEventRepository(s.tx)
-
-	event, err := eventRepo.GeByID(eventID)
+func (s *ticketService) CreateTicket(ctx context.Context, eventID uint, req CreateTicketRequest) (*CreateTicketResponse, error) {
+	event, err := s.eventRepository.GeByID(ctx, eventID)
 	if err != nil {
 		return nil, &Error{Message: "event not found", StatusCode: http.StatusNotFound, Err: err}
 	}
@@ -54,13 +51,11 @@ func (s *ticketService) CreateTicket(eventID uint, req CreateTicketRequest) (*Cr
 		return nil, &Error{Message: "failed to create ticket", StatusCode: http.StatusBadRequest, Err: err}
 	}
 
-	if err := eventRepo.Save(event); err != nil {
+	if err := s.eventRepository.Save(ctx, event); err != nil {
 		return nil, &Error{Message: "failed to update event tickets", StatusCode: http.StatusInternalServerError, Err: err}
 	}
 
-	ticketRepo := s.newTicketRepository(s.tx)
-
-	if err := ticketRepo.Create(ticket); err != nil {
+	if err := s.ticketRepository.Create(ctx, ticket); err != nil {
 		return nil, &Error{Message: "failed to book tickets", StatusCode: http.StatusInternalServerError, Err: err}
 	}
 
