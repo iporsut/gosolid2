@@ -4,12 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-
-	"gorm.io/gorm"
 )
-
-type newTicketRepositoryFunc func(tx *gorm.DB) TicketRepository
-type newEventRepositoryFunc func(tx *gorm.DB) EventRepository
 
 type ticketService struct {
 	ticketRepository TicketRepository
