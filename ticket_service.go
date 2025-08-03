@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	"gorm.io/gorm"
 )
@@ -38,25 +37,21 @@ func (s *TicketService) CreateTicket(eventID uint, req CreateTicketRequest) (*Cr
 		return nil, &Error{Message: "event not found", StatusCode: http.StatusNotFound, Err: err}
 	}
 
-	if req.Quantity > event.RemainingTickets {
-		return nil, &Error{Message: "not enough tickets available", StatusCode: http.StatusBadRequest}
+	ticket, err := event.NewOrderTicket(req.Quantity, req.CustomerName)
+	if err != nil {
+		if err == ErrNotEnoughTickets {
+			return nil, &Error{Message: "not enough tickets available", StatusCode: http.StatusBadRequest, Err: err}
+		}
+		return nil, &Error{Message: "failed to create ticket", StatusCode: http.StatusBadRequest, Err: err}
 	}
 
-	event.RemainingTickets -= req.Quantity
 	if err := eventRepo.Save(event); err != nil {
 		return nil, &Error{Message: "failed to update event tickets", StatusCode: http.StatusInternalServerError, Err: err}
 	}
 
 	ticketRepo := NewTicketRepository(s.tx)
 
-	ticket := Ticket{
-		EventID:      event.ID,
-		Quantity:     req.Quantity,
-		CustomerName: req.CustomerName,
-		BookedAt:     time.Now(),
-	}
-
-	if err := ticketRepo.Create(&ticket); err != nil {
+	if err := ticketRepo.Create(ticket); err != nil {
 		return nil, &Error{Message: "failed to book tickets", StatusCode: http.StatusInternalServerError, Err: err}
 	}
 
